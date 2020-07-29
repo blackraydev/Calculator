@@ -1,7 +1,5 @@
 "use strict";
-
-class Calculator {
-    constructor() {
-        
-    }
+function type(text) {
+    return text;
 }
+alert(type(23));
