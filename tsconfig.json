@@ -1,8 +1,8 @@
-{
-    "compileOnSave": true,
+{ 
     "compilerOptions": {
         "target": "es5",
         "removeComments": true,
+        "outDir": "js",
         "outFile": "calc.js"
-    },
- }
+    }
+}
