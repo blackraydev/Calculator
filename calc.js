@@ -16,44 +16,99 @@ var Calculator = (function () {
                 return String(a / b);
             },
             _a);
-        this.sum = 0;
     }
     return Calculator;
 }());
 function addEvents() {
-    var field = document.querySelector(".field"), AC = document.querySelector("#AC"), numbers = document.querySelectorAll(".number, .doubled, #comma"), signs = document.querySelectorAll(".sign"), equiv = document.querySelector("#equiv");
+    var field = document.querySelector(".field"), AC = document.querySelector("#AC"), equiv = document.querySelector("#equiv"), numbers = document.querySelectorAll(".number, .doubled, #comma"), signs = document.querySelectorAll(".sign"), extra = document.querySelectorAll(".extra");
     var calc = new Calculator();
-    var repeated = false;
-    var toggler = false;
-    var calced = false;
-    var access = false;
-    var storage;
-    var a, b;
-    var func;
+    var isLongType = false, isRepeated = false, isPressed = false, isNewInput = true, isWaiting = true, isTyped = false, a, b, func = null;
     field.innerHTML = "0";
-    AC.addEventListener("click", function () {
-        calc.sum = 0;
-        field.innerHTML = String(calc.sum);
-        toggler = false;
-        calced = false;
-        repeated = false;
-        access = false;
-    });
-    var _loop_1 = function (i) {
-        numbers[i].addEventListener("click", function () {
-            if ((field.innerHTML == "0" || toggler || calced) && !access) {
-                field.innerHTML = numbers[i].innerHTML;
-                if (calced) {
-                    toggler = false;
-                }
-                if (toggler) {
-                    access = true;
-                }
+    function clear() {
+        field.innerHTML = "0";
+        isNewInput = true;
+        isWaiting = true;
+        isTyped = false;
+        isLongType = false;
+        isRepeated = false;
+        isPressed = false;
+        func = null;
+    }
+    function numberInput(input) {
+        if (input.length > 9) {
+        }
+        if ((field.innerHTML === "0" || !isWaiting) && !isLongType || isNewInput) {
+            if (!isWaiting) {
+                isTyped = true;
+                isLongType = true;
+            }
+            isNewInput = false;
+            field.innerHTML = input;
+        }
+        else {
+            field.innerHTML += input;
+        }
+    }
+    function signInput(input) {
+        if (input === "*")
+            input = "×";
+        if (input === "/")
+            input = "÷";
+        if (isWaiting) {
+            a = Number(field.innerHTML);
+            isWaiting = false;
+        }
+        else if (isTyped) {
+            b = Number(field.innerHTML);
+            field.innerHTML = func(a, b);
+            a = Number(field.innerHTML);
+            isPressed = true;
+        }
+        isNewInput = true;
+        isTyped = false;
+        isLongType = false;
+        isRepeated = false;
+        func = calc.operations[input];
+    }
+    function equivNumbers() {
+        if (isTyped || isWaiting || isPressed) {
+            if (!isRepeated) {
+                b = Number(field.innerHTML);
             }
             else {
-                field.innerHTML += numbers[i].innerHTML;
+                a = Number(field.innerHTML);
             }
-            repeated = false;
+            field.innerHTML = func(a, b);
+            isNewInput = true;
+            isRepeated = true;
+            isWaiting = true;
+            isTyped = false;
+            isLongType = false;
+        }
+    }
+    function extraInput(input) {
+        if (input === "+/-" || input === "–") {
+            if (!isTyped)
+                a = -a;
+            else
+                b = -b;
+            field.innerHTML = String(-Number(field.innerHTML));
+        }
+        else {
+            field.innerHTML = String(Number(field.innerHTML) * 0.01);
+        }
+        isNewInput = true;
+    }
+    AC.addEventListener("click", clear);
+    var _loop_1 = function (i) {
+        numbers[i].addEventListener("click", function () {
+            if (numbers[i].innerHTML !== ".") {
+                numberInput(numbers[i].innerHTML);
+            }
+            else if (field.innerHTML.indexOf(".") === -1) {
+                field.innerHTML += ".";
+            }
+            isRepeated = false;
         });
     };
     for (var i = 0; i < numbers.length; i++) {
@@ -61,42 +116,43 @@ function addEvents() {
     }
     var _loop_2 = function (i) {
         signs[i].addEventListener("click", function () {
-            var tempSign = signs[i].innerHTML;
-            if (!toggler || tempSign != storage) {
-                a = Number(field.innerHTML);
-                toggler = true;
-                storage = tempSign;
-                func = calc.operations[signs[i].innerHTML];
-            }
-            else {
-                b = Number(field.innerHTML);
-                if (!calced) {
-                    calced = true;
-                    field.innerHTML = calc.operations[signs[i].innerHTML](a, b);
-                }
-            }
-            access = false;
-            repeated = false;
+            signInput(signs[i].innerHTML);
         });
     };
     for (var i = 0; i < signs.length; i++) {
         _loop_2(i);
     }
-    equiv.addEventListener("click", function () {
-        if (toggler) {
-            if (!repeated) {
-                b = Number(field.innerHTML);
-                if (calced) {
-                    a = b;
-                }
-                field.innerHTML = func(a, b);
-                repeated = true;
+    equiv.addEventListener("click", equivNumbers);
+    var _loop_3 = function (i) {
+        extra[i].addEventListener("click", function () {
+            extraInput(extra[i].innerHTML);
+        });
+    };
+    for (var i = 0; i < extra.length; i++) {
+        _loop_3(i);
+    }
+    document.body.addEventListener("keydown", function (e) {
+        if (e.key !== " ") {
+            if (Number(e.key) >= 0 && Number(e.key) <= 9) {
+                numberInput(e.key);
             }
-            else {
-                a = Number(field.innerHTML);
-                field.innerHTML = func(a, b);
+            else if (e.key === "." && field.innerHTML.indexOf(".") === -1) {
+                field.innerHTML += ".";
             }
-            access = false;
+            else if (e.key === "Escape") {
+                clear();
+            }
+            else if (e.key === "*" || e.key === "/" || e.key === "+" || e.key === "-") {
+                signInput(e.key);
+            }
+            else if (e.key === "Enter") {
+                equivNumbers();
+            }
+            else if (e.key === "–" || e.key === "%") {
+                extraInput(e.key);
+            }
+            console.log(field);
+            isRepeated = false;
         }
     });
 }
