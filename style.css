@@ -3,12 +3,11 @@
 *::after {
     box-sizing: border-box;
     outline: 0;
-    margin: 0; 
 }
 
 body {
-    background-color: #000000;
-    background-image: linear-gradient(150deg, #000000 0%, #2c3e50 74%);
+    background-color: #f9fcff;
+    background-image: linear-gradient(147deg, #f9fcff 0%, #dee4ea 74%);
 }
 
 /* Calculator styles */
@@ -16,7 +15,7 @@ body {
 .calc {
     position: absolute;
     width: 15.35%;
-    min-height: 300px;
+    min-height: 307px;
     height: 40.55%;
     background: #292f33;
     border-radius: 6px;

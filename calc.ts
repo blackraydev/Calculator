@@ -24,22 +24,30 @@ class Calculator {
 // Event listeners for all the buttons
 function addEvents() {
     const field   = document.querySelector(".field"),
-          AC      = document.querySelector("#AC"),
           equiv   = document.querySelector("#equiv"),
+          AC      = document.querySelector("#AC"),
           numbers = document.querySelectorAll(".number, .doubled, #comma"),
           signs   = document.querySelectorAll(".sign"),
           extra   = document.querySelectorAll(".extra");
 
     const calc: Calculator = new Calculator();
 
-    let isLongType: boolean = false, // Набор чисел с неоднозначным кол-вом знаков
-        isRepeated: boolean = false, // Нажатие на знак "Равно" более одного раза подряд
-        isPressed: boolean = false,  // Исполнение функции калькулятора мат. операциями
-        isNewInput: boolean = true,  // 
-        isWaiting: boolean = true,   // Было первое нажатие мат. знака
-        isTyped: boolean = false,    // 
-        a, b: number,
-        func = null;
+    const mathSigns = {
+        "÷": signs[0],
+        "×": signs[1],
+        "-": signs[2],
+        "+": signs[3],
+    }
+
+    let isLongType: boolean  = false, // Long number is typed
+        isRepeated: boolean  = false, // Tapping "=" sign two or more times in a roll
+        isPressed: boolean   = false, // Calculating w/ tapping math. signs
+        isNewInput: boolean  = true,  // Tapping numbers after calculating
+        isWaiting: boolean   = true,  // Initially tapping the math. sign
+        isTyped: boolean     = false, // Initially input of digit
+        pressedSign: Element = null,  // Contains the last pressed math. sign as Element
+        a, b: number         = null,  // Two terms
+        func                 = null;  // Contains the last pressed math. sign as Function
 
     // Initial zeroing of the field
     field.innerHTML = "0";
@@ -54,7 +62,29 @@ function addEvents() {
         isLongType = false;
         isRepeated = false;
         isPressed = false;
+
         func = null;
+        a = b = 0;
+
+        if (pressedSign) {
+            pressedSign.setAttribute("style", "");
+        }
+    }
+
+    // Cutting long floating numbers
+    function cutFloatNum() {
+        if (field.innerHTML.length > 7) {
+            field.innerHTML = Number(field.innerHTML).toFixed(7 - 
+            Math.floor(Number(field.innerHTML)).toString().length);
+
+            while (field.innerHTML[field.innerHTML.length - 1] === "0") {
+                field.innerHTML = field.innerHTML.slice(0, field.innerHTML.length - 1);
+            }
+
+            if (field.innerHTML[field.innerHTML.length - 1] === ".") {
+                field.innerHTML = field.innerHTML.slice(0, field.innerHTML.length - 1);
+            } 
+        }
     }
 
     // Input numbers
@@ -70,7 +100,8 @@ function addEvents() {
             field.innerHTML = input;
         }
         else {
-            field.innerHTML += input;
+            if (field.innerHTML.length <= 8)
+                field.innerHTML += input;
         }
     }
 
@@ -96,6 +127,15 @@ function addEvents() {
         isRepeated = false;
 
         func = calc.operations[input];
+
+        cutFloatNum();
+
+        if (pressedSign) {
+            pressedSign.setAttribute("style", "");
+        }
+        
+        pressedSign = mathSigns[input];
+        pressedSign.setAttribute("style", "border: 1px solid black");
     }
 
     // Input equivalence - "="
@@ -108,7 +148,10 @@ function addEvents() {
                 a = Number(field.innerHTML);
             }
 
-            field.innerHTML = func(a, b);
+            if (func) {
+                field.innerHTML = func(a, b);
+                pressedSign.setAttribute("style", "");
+            } 
     
             isNewInput = true;
             isRepeated = true;
@@ -116,6 +159,19 @@ function addEvents() {
             isTyped = false;
             isLongType = false;
         }
+        else if (func) {
+            if (!b) {
+                field.innerHTML = func(a, a);
+                b = a;
+            }
+            else {
+                field.innerHTML = func(a, b);
+            }
+
+            a = Number(field.innerHTML);
+        }
+
+        cutFloatNum();
     }
 
     // Input "+/-" or "%" signs
@@ -131,6 +187,13 @@ function addEvents() {
         }
 
         isNewInput = true;
+
+        if (field.innerHTML.length > 8) {
+            field.innerHTML = Number(field.innerHTML).toFixed(field.innerHTML.length -
+                              Math.floor(Number(field.innerHTML)).toString().length);
+        }
+
+        cutFloatNum();
     }
 
     // Button "AC" - event by mouse clicking
@@ -141,6 +204,10 @@ function addEvents() {
         numbers[i].addEventListener("click", function() {
             if (numbers[i].innerHTML !== ".") {
                 numberInput(numbers[i].innerHTML);
+            }
+            else if (isNewInput && numbers[i].innerHTML === ".") {
+                field.innerHTML = "0.";
+                isNewInput = false;
             }
             else if (field.innerHTML.indexOf(".") === -1){
                 field.innerHTML += ".";
@@ -158,7 +225,9 @@ function addEvents() {
     }
 
     // Button "Equivalence" - event by mouse clicking
-    equiv.addEventListener("click", equivNumbers);
+    equiv.addEventListener("click", function() {
+        equivNumbers();
+    });
 
     // Buttons "Extra" - event by mouse clicking
     for (let i = 0; i < extra.length; i++) {
@@ -188,10 +257,12 @@ function addEvents() {
             else if (e.key === "–" || e.key === "%") {
                 extraInput(e.key);
             }
-            
-            isRepeated = false;
         }
     })
 }
 
-addEvents();
+function main() {
+    addEvents();
+}
+
+main();

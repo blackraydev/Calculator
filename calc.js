@@ -20,9 +20,15 @@ var Calculator = (function () {
     return Calculator;
 }());
 function addEvents() {
-    var field = document.querySelector(".field"), AC = document.querySelector("#AC"), equiv = document.querySelector("#equiv"), numbers = document.querySelectorAll(".number, .doubled, #comma"), signs = document.querySelectorAll(".sign"), extra = document.querySelectorAll(".extra");
+    var field = document.querySelector(".field"), equiv = document.querySelector("#equiv"), AC = document.querySelector("#AC"), numbers = document.querySelectorAll(".number, .doubled, #comma"), signs = document.querySelectorAll(".sign"), extra = document.querySelectorAll(".extra");
     var calc = new Calculator();
-    var isLongType = false, isRepeated = false, isPressed = false, isNewInput = true, isWaiting = true, isTyped = false, a, b, func = null;
+    var mathSigns = {
+        "÷": signs[0],
+        "×": signs[1],
+        "-": signs[2],
+        "+": signs[3],
+    };
+    var isLongType = false, isRepeated = false, isPressed = false, isNewInput = true, isWaiting = true, isTyped = false, pressedSign = null, a, b = null, func = null;
     field.innerHTML = "0";
     function clear() {
         field.innerHTML = "0";
@@ -33,10 +39,24 @@ function addEvents() {
         isRepeated = false;
         isPressed = false;
         func = null;
+        a = b = 0;
+        if (pressedSign) {
+            pressedSign.setAttribute("style", "");
+        }
+    }
+    function cutFloatNum() {
+        if (field.innerHTML.length > 7) {
+            field.innerHTML = Number(field.innerHTML).toFixed(7 -
+                Math.floor(Number(field.innerHTML)).toString().length);
+            while (field.innerHTML[field.innerHTML.length - 1] === "0") {
+                field.innerHTML = field.innerHTML.slice(0, field.innerHTML.length - 1);
+            }
+            if (field.innerHTML[field.innerHTML.length - 1] === ".") {
+                field.innerHTML = field.innerHTML.slice(0, field.innerHTML.length - 1);
+            }
+        }
     }
     function numberInput(input) {
-        if (input.length > 9) {
-        }
         if ((field.innerHTML === "0" || !isWaiting) && !isLongType || isNewInput) {
             if (!isWaiting) {
                 isTyped = true;
@@ -46,7 +66,8 @@ function addEvents() {
             field.innerHTML = input;
         }
         else {
-            field.innerHTML += input;
+            if (field.innerHTML.length <= 8)
+                field.innerHTML += input;
         }
     }
     function signInput(input) {
@@ -69,6 +90,12 @@ function addEvents() {
         isLongType = false;
         isRepeated = false;
         func = calc.operations[input];
+        cutFloatNum();
+        if (pressedSign) {
+            pressedSign.setAttribute("style", "");
+        }
+        pressedSign = mathSigns[input];
+        pressedSign.setAttribute("style", "border: 1px solid black");
     }
     function equivNumbers() {
         if (isTyped || isWaiting || isPressed) {
@@ -78,13 +105,27 @@ function addEvents() {
             else {
                 a = Number(field.innerHTML);
             }
-            field.innerHTML = func(a, b);
+            if (func) {
+                field.innerHTML = func(a, b);
+                pressedSign.setAttribute("style", "");
+            }
             isNewInput = true;
             isRepeated = true;
             isWaiting = true;
             isTyped = false;
             isLongType = false;
         }
+        else if (func) {
+            if (!b) {
+                field.innerHTML = func(a, a);
+                b = a;
+            }
+            else {
+                field.innerHTML = func(a, b);
+            }
+            a = Number(field.innerHTML);
+        }
+        cutFloatNum();
     }
     function extraInput(input) {
         if (input === "+/-" || input === "–") {
@@ -98,12 +139,21 @@ function addEvents() {
             field.innerHTML = String(Number(field.innerHTML) * 0.01);
         }
         isNewInput = true;
+        if (field.innerHTML.length > 8) {
+            field.innerHTML = Number(field.innerHTML).toFixed(field.innerHTML.length -
+                Math.floor(Number(field.innerHTML)).toString().length);
+        }
+        cutFloatNum();
     }
     AC.addEventListener("click", clear);
     var _loop_1 = function (i) {
         numbers[i].addEventListener("click", function () {
             if (numbers[i].innerHTML !== ".") {
                 numberInput(numbers[i].innerHTML);
+            }
+            else if (isNewInput && numbers[i].innerHTML === ".") {
+                field.innerHTML = "0.";
+                isNewInput = false;
             }
             else if (field.innerHTML.indexOf(".") === -1) {
                 field.innerHTML += ".";
@@ -122,7 +172,9 @@ function addEvents() {
     for (var i = 0; i < signs.length; i++) {
         _loop_2(i);
     }
-    equiv.addEventListener("click", equivNumbers);
+    equiv.addEventListener("click", function () {
+        equivNumbers();
+    });
     var _loop_3 = function (i) {
         extra[i].addEventListener("click", function () {
             extraInput(extra[i].innerHTML);
@@ -151,9 +203,10 @@ function addEvents() {
             else if (e.key === "–" || e.key === "%") {
                 extraInput(e.key);
             }
-            console.log(field);
-            isRepeated = false;
         }
     });
 }
-addEvents();
+function main() {
+    addEvents();
+}
+main();
